@@ -2,11 +2,11 @@
 //| CM_MacD_Ult_MTF.mq5                                              |
 //| Converted from Pine Script by ChrisMoody                         |
 //| Updated 4-10-2014                                                |
-//| MQL5 Version - MT5 Compatible - FULLY FIXED                      |
+//| MQL5 Version - MT5 Compatible - FIXED DISPLAY                    |
 //+------------------------------------------------------------------+
 #property copyright "ChrisMoody"
 #property link      "https://www.tradingview.com"
-#property version   "3.00"
+#property version   "4.00"
 #property indicator_separate_window
 #property indicator_buffers 4
 #property indicator_plots   4
@@ -137,21 +137,40 @@ int OnCalculate(const int rates_total,
     ArraySetAsSeries(buffer_cross, true);
     
     //--- Main calculation loop
-    int limit = prev_calculated == 0 ? rates_total - 1 : prev_calculated - 1;
+    int start = prev_calculated > 0 ? prev_calculated - 1 : rates_total - 1;
     
-    for(int i = limit; i >= 1; i--)
+    for(int i = start; i >= 0; i--)
     {
         // Plot MACD and Signal
-        buffer_macd[i] = showMacDSignal ? macd_values[i] : EMPTY_VALUE;
-        buffer_signal[i] = showMacDSignal ? signal_values[i] : EMPTY_VALUE;
-        buffer_hist[i] = showHistogram ? hist_values[i] : EMPTY_VALUE;
+        if(showMacDSignal)
+        {
+            buffer_macd[i] = macd_values[i];
+            buffer_signal[i] = signal_values[i];
+        }
+        else
+        {
+            buffer_macd[i] = EMPTY_VALUE;
+            buffer_signal[i] = EMPTY_VALUE;
+        }
+        
+        // Plot Histogram
+        if(showHistogram)
+        {
+            buffer_hist[i] = hist_values[i];
+        }
+        else
+        {
+            buffer_hist[i] = EMPTY_VALUE;
+        }
+        
+        // Initialize cross
         buffer_cross[i] = EMPTY_VALUE;
         
         // Check for cross between MACD and Signal
         if(showDots && i < rates_total - 1)
         {
             bool macd_above_signal_current = macd_values[i] >= signal_values[i];
-            bool macd_above_signal_prev = macd_values[i+1] >= signal_values[i+1];
+            bool macd_above_signal_prev = macd_values[i + 1] >= signal_values[i + 1];
             
             // Detect cross
             if(macd_above_signal_current != macd_above_signal_prev)
@@ -159,18 +178,6 @@ int OnCalculate(const int rates_total,
                 buffer_cross[i] = signal_values[i];
             }
         }
-    }
-    
-    // Set colors using PLOT_LINE_COLOR with proper syntax
-    if(macdColorChange)
-    {
-        PlotIndexSetInteger(0, PLOT_LINE_COLOR, clrLime);    // MACD line color
-        PlotIndexSetInteger(1, PLOT_LINE_COLOR, clrYellow);  // Signal line color
-    }
-    
-    if(histColorChange)
-    {
-        PlotIndexSetInteger(2, PLOT_LINE_COLOR, clrDodgerBlue); // Histogram color
     }
     
     return rates_total;
